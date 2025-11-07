@@ -25,6 +25,20 @@
             left: 0;
         }
     </style>
+    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
+    <script>
+      window.OneSignal = window.OneSignal || [];
+      OneSignal.push(function() {
+        OneSignal.init({
+          appId: "49c75595-f95c-4514-978c-160f81d8c5f5", 
+          notifyButton: {
+            enable: true, 
+          },
+          allowLocalhostAsSecure: true,
+          autoResubscribe: true, 
+        });
+      });
+    </script>
 </head>
 <body>
 
