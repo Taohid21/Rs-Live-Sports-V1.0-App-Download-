@@ -3,19 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <title>tioTV | Home</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
     <style>
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             overflow: hidden;
+            touch-action: pan-x pan-y; 
         }
         #c {
             width: 100vw;
             height: 100vh;
             border: none;
             display: none;
+            overflow: auto;
+            min-width: 100%;
+            min-height: 100%;
+            position: absolute; 
+            top: 0; 
+            left: 0;
         }
     </style>
 </head>
@@ -49,6 +56,8 @@
             i.frameBorder = '0';
             i.allowFullscreen = true;
             i.style.display = 'block';
+            i.style.width = '100%';
+            i.style.height = '100%';
 
             document.body.appendChild(i);
 
