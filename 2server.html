@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Channel Player</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            background: #000;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .shaka-video-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            object-fit: contain;
+        }
+
+        /* YouTube Theme CSS (No changes here) */
+        @font-face {
+          font-family: 'Roboto'; font-style: normal; font-weight: 400; font-display: swap;
+          src: url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Me5Q.ttf) format('truetype');
+        }
+        @font-face {
+          font-family: 'Roboto'; font-style: normal; font-weight: 500; font-display: swap;
+          src: url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9vAw.ttf) format('truetype');
+        }
+        .youtube-theme { font-family: 'Roboto', sans-serif; }
+        .youtube-theme .shaka-bottom-controls { width: 100%; padding: 0; z-index: 1; display: flex; flex-direction: column; }
+        .youtube-theme .shaka-controls-button-panel { order: 2; height: 40px; padding: 0 10px; }
+        .youtube-theme .shaka-range-container { margin: 4px 10px; top: 0; }
+        .youtube-theme .shaka-small-play-button { order: -3; }
+        .youtube-theme .shaka-mute-button { order: -2; }
+        .youtube-theme .shaka-controls-button-panel > * { margin: 0; padding: 3px 8px; color: #EEE; height: 40px; }
+        .youtube-theme .shaka-controls-button-panel .shaka-volume-bar-container { position: relative; z-index: 10; left: -1px; order: -1; opacity: 0; width: 0px; transition: width 0.2s cubic-bezier(0.4, 0, 1, 1); height: 3px; padding: 0; }
+        .youtube-theme .shaka-controls-button-panel .shaka-volume-bar-container:hover,
+        .youtube-theme .shaka-controls-button-panel .shaka-volume-bar-container:focus { display: block; width: 50px; opacity: 1; padding: 0 6px; }
+        .youtube-theme .shaka-mute-button:hover + div { opacity: 1; width: 50px; padding: 0 6px; }
+        .youtube-theme .shaka-current-time { padding: 0 10px; font-size: 12px; }
+        .youtube-theme .shaka-seek-bar-container { height: 3px; position: relative; top: -1px; margin-bottom: 0; }
+        .youtube-theme .shaka-seek-bar-container .shaka-range-element { opacity: 0; }
+        .youtube-theme .shaka-seek-bar-container:hover { height: 5px; top: 0; cursor: pointer; }
+        .youtube-theme .shaka-seek-bar-container:hover .shaka-range-element { opacity: 1; cursor: pointer; }
+        .youtube-theme .shaka-seek-bar-container input[type=range]::-webkit-slider-thumb { background: #FF0000; cursor: pointer; }
+        .youtube-theme .shaka-video-container .material-icons-round { font-family: 'Material Icons Sharp'; }
+        .shaka-spinner-container, .shaka-spinner, .shaka-spinner-svg { display: none !important; opacity: 0 !important; }
+        .youtube-theme .shaka-seek-bar { background: rgba(255,255,255,.2) !important; }
+        .youtube-theme .shaka-buffered-range { background: rgba(255,255,255,.4) !important; }
+        .youtube-theme .shaka-played-range { background: rgb(255,0,0) !important; }
+        
+        /* লোগো এবং নতুন চ্যানেল সুইচারের জন্য স্টাইল */
+        #myLogo { width: 120px; height: 40px; position: absolute; right: 15px; top: 10px; z-index: 10; }
+
+        /* --- নতুন চ্যানেল সুইচারের জন্য CSS --- */
+        #channelSwitcherContainer {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            z-index: 10; /* লোগোর মতো একই লেয়ারে থাকবে */
+        }
+        #currentChannelBtn {
+            background-color: rgba(28, 28, 28, 0.8);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #currentChannelBtn:hover {
+            background-color: rgba(45, 45, 45, 0.9);
+        }
+        #channelList {
+            list-style: none;
+            padding: 5px 0;
+            margin: 5px 0 0;
+            background: rgba(28, 28, 28, 0.95);
+            border-radius: 4px;
+            position: absolute;
+            min-width: 150px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #channelList.hidden {
+            display: none;
+        }
+        #channelList li {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #eee;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        #channelList li:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="shaka-video-container youtube-theme" data-shaka-player-container>
+    <video autoplay playsinline id="video"></video>
+    
+    <!-- নতুন চ্যানেল সুইচার বাটন (লোগোর পাশে থাকবে) -->
+    <div id="channelSwitcherContainer">
+        <button id="currentChannelBtn">Willow SPORTS</button>
+        <ul id="channelList" class="hidden">
+            <!-- Channel list will be populated by JavaScript -->
+        </ul>
+    </div>
+
+    <img id="myLogo" src="tiolive.png">
+</div>
+
+<script>
+    // --- চ্যানেলগুলোর তথ্য এখানে একটি অ্যারেতে রাখা হয়েছে ---
+    const channels = [
+        {
+            name: 'Willow SPORTS',
+            url: 'https://a201aivottlinear-a.akamaihd.net/OTTB/lhr-nitro/clients/dash/enc/f60kqesunw/out/v1/a435ed7a00f947deb4369b46d8f2fb70/cenc.mpd',
+            drm: {
+                clearKeys: {
+                    '1779c27b9d077a3ba0c9cc1bb9a94b9f': 'cc5cf3b7928fb9e0a1ee6a8b566f0a8e'
+                }
+            }
+        },
+        {
+            name: 'Fox Cricket',
+            url: 'https://hugh.cdn.rumble.cloud/live/t5qc33px/slot-89/ne5u-izq9/chunklist.m3u8',
+            drm: {} // এই লিঙ্কের জন্য কোনো কী লাগবে না, তাই এটি খালি
+        }
+    ];
+
+    async function initPlayer() {
+        shaka.polyfill.installAll();
+        if (!shaka.Player.isBrowserSupported()) {
+            console.error('Browser not supported!');
+            return;
+        }
+
+        const video = document.getElementById('video');
+        const container = document.querySelector('.shaka-video-container');
+        const player = new shaka.Player(video);
+
+        // UI আগের মতোই থাকছে, কোনো পরিবর্তন করা হয়নি
+        const ui = new shaka.ui.Overlay(player, container, video);
+        ui.configure({
+            'controlPanelElements': [
+                'play_pause', 'time_and_duration', 'mute', 'volume', 'spacer',
+                'captions', 'language', 'quality', 'overflow_menu'
+            ],
+            'overflowMenuButtons': ['fullscreen']
+        });
+
+        // --- নতুন চ্যানেল সুইচারের জন্য JavaScript ---
+        const switcherBtn = document.getElementById('currentChannelBtn');
+        const channelListEl = document.getElementById('channelList');
+
+        // মেনুতে চ্যানেলগুলোর নাম যোগ করা হচ্ছে
+        channels.forEach((channel, index) => {
+            const li = document.createElement('li');
+            li.textContent = channel.name;
+            li.dataset.index = index;
+            channelListEl.appendChild(li);
+        });
+
+        // বাটনে ক্লিক করলে মেনু দেখাবে বা লুকাবে
+        switcherBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // পেজের অন্য কোথাও ক্লিক করলে যেন মেনু বন্ধ হয় তার জন্য
+            channelListEl.classList.toggle('hidden');
+        });
+
+        // মেনু থেকে কোনো চ্যানেল সিলেক্ট করলে
+        channelListEl.addEventListener('click', (event) => {
+            if (event.target.tagName === 'LI') {
+                const channelIndex = parseInt(event.target.dataset.index, 10);
+                const selectedChannel = channels[channelIndex];
+                
+                switcherBtn.textContent = selectedChannel.name; // বাটন টেক্সট আপডেট
+                channelListEl.classList.add('hidden'); // মেনু লুকিয়ে ফেলা
+                
+                loadChannel(selectedChannel); // নতুন চ্যানেল লোড করা
+            }
+        });
+        
+        // বাটনের বাইরে ক্লিক করলে মেনু বন্ধ হয়ে যাবে
+        document.addEventListener('click', (e) => {
+            if (!switcherBtn.contains(e.target)) {
+                channelListEl.classList.add('hidden');
+            }
+        });
+
+
+        // চ্যানেল পরিবর্তনের জন্য ফাংশন
+        const loadChannel = async (channel) => {
+            console.log(`Loading channel: ${channel.name}`);
+            try {
+                // await player.unload(); // লাইভ স্ট্রিমের জন্য unload না করা ভালো হতে পারে, সরাসরি load করলে দ্রুত সুইচ হয়
+                player.configure({ drm: channel.drm }); // নতুন চ্যানেলের DRM কনফিগার
+                await player.load(channel.url);
+                console.log('Video loaded successfully!');
+            } catch (error) {
+                console.error(`Error loading ${channel.name}:`, error);
+            }
+        };
+
+        player.addEventListener('error', (event) => {
+            console.error('Shaka Player Error:', event.detail);
+        });
+        
+        // প্রথমবার ডিফল্ট চ্যানেলটি লোড করা
+        const initialChannel = channels[0];
+        player.configure({
+            streaming: {
+                lowLatencyMode: true,
+                bufferingGoal: 20,
+                rebufferingGoal: 2
+            }
+        });
+        await loadChannel(initialChannel);
+    }
+
+    document.addEventListener('DOMContentLoaded', initPlayer);
+</script>
+
+</body>
+</html>
