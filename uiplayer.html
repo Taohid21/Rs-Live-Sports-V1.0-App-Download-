@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            background: #000;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .shaka-video-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            object-fit: contain;
+        }
+        .live-indicator {
+            position: absolute;
+            bottom: 12px;
+            left: 24px;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            color: #fff;
+            font-size: 16px;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #fff;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            animation: live-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes live-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.9); }
+        }
+        .shaka-seek-bar-container, 
+        .shaka-range-container,
+        .shaka-current-time {
+            display: none !important;
+        }
+        .shaka-overflow-menu-button {
+    opacity: 0 !important;           /* বাটনটি সম্পূর্ণ স্বচ্ছ বা অদৃশ্য হয়ে যাবে */
+    pointer-events: none !important; /* অদৃশ্য বাটনে ক্লিক করা যাবে না */
+    cursor: default !important;      /* মাউস নিলেও হাত চিহ্ন আসবে না */
+}
+        .shaka-bottom-controls {
+            padding-bottom: 5px;
+        }
+        .shaka-controls-button-panel {
+            background: transparent !important;
+        }
+        .shaka-controls-button-panel > .material-icons-round {
+            color: #fff;
+            text-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+        #myLogo { 
+            width: 120px; 
+            height: auto; 
+            position: absolute; 
+            right: 20px; 
+            top: 20px; 
+            z-index: 11;
+            display: none;
+            transition: opacity 0.5s ease-in;
+        }
+        .shaka-spinner-container { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="shaka-video-container" data-shaka-player-container>
+    <video autoplay playsinline id="video"></video>
+    <img id="myLogo" src="tiolive.png">
+    
+    <div class="live-indicator">
+        <div class="live-dot"></div>
+        LIVE
+    </div>
+</div>
+
+<script>
+    async function initPlayer() {
+        const streamUrl = 'https://a201aivottlinear-a.akamaihd.net/OTTB/lhr-nitro/clients/dash/enc/f60kqesunw/out/v1/a435ed7a00f947deb4369b46d8f2fb70/cenc.mpd';
+        const keyId = '1779c27b9d077a3ba0c9cc1bb9a94b9f';
+        const key = 'cc5cf3b7928fb9e0a1ee6a8b566f0a8e';
+
+        shaka.polyfill.installAll();
+        if (!shaka.Player.isBrowserSupported()) return;
+
+        const video = document.getElementById('video');
+        const container = document.querySelector('.shaka-video-container');
+        const player = new shaka.Player(video);
+        const ui = new shaka.ui.Overlay(player, container, video);
+
+        ui.configure({
+            'controlPanelElements': [
+                'spacer',
+                'captions',
+                'quality',
+                'language',
+                'fullscreen',
+                'overflow_menu'
+            ],
+            'overflowMenuButtons': ['cast']
+        });
+
+        player.configure({
+            drm: {
+                clearKeys: {
+                    [keyId]: key
+                }
+            },
+            streaming: {
+                lowLatencyMode: true,
+                bufferingGoal: 20,
+                rebufferingGoal: 2
+            }
+        });
+
+        video.addEventListener('playing', () => {
+            document.getElementById('myLogo').style.display = 'block';
+        });
+
+        try {
+            await player.load(streamUrl);
+            video.play();
+        } catch (error) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', initPlayer);
+</script>
+
+</body>
+</html>
