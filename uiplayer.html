@@ -21,6 +21,7 @@
             inset: 0;
             width: 100%;
             height: 100%;
+            cursor: pointer; /* Click feedback */
         }
         video {
             width: 100%;
@@ -28,6 +29,8 @@
             background: #000;
             object-fit: contain;
         }
+        
+        /* Live Indicator Styles */
         .live-indicator {
             position: absolute;
             bottom: 12px;
@@ -41,7 +44,16 @@
             pointer-events: none;
             text-shadow: 0 0 5px rgba(0,0,0,0.5);
             letter-spacing: 1px;
+            /* এনিমেশন এবং ট্রানজিশন যোগ করা হয়েছে */
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
         }
+        
+        /* যখন ক্লাসটি যোগ হবে তখন অদৃশ্য হয়ে যাবে */
+        .live-indicator.fade-out {
+            opacity: 0;
+        }
+
         .live-dot {
             width: 8px;
             height: 8px;
@@ -55,6 +67,8 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.3; transform: scale(0.9); }
         }
+        
+        /* Shaka UI cleanups */
         .shaka-seek-bar-container, 
         .shaka-range-container,
         .shaka-current-time {
@@ -75,16 +89,19 @@
             color: #fff;
             text-shadow: 0 0 4px rgba(0,0,0,0.5);
         }
+
+        /* লোগো স্টাইল আপডেট (বাম পাশে আনা হয়েছে) */
         #myLogo { 
             width: 15%;
             max-width: 120px;
             min-width: 80px;
             height: auto;
             position: absolute; 
-            right: 20px; 
+            /* আগে right ছিল, এখন left করা হয়েছে */
+            left: 20px; 
             top: 20px; 
             z-index: 11;
-            display: none;
+            display: none; /* ভিডিও প্লে হলে এটি দেখা যাবে */
             object-fit: contain;
         }
         .shaka-spinner-container { display: none !important; }
@@ -93,10 +110,12 @@
 <body>
 
 <div class="shaka-video-container" data-shaka-player-container>
-    <video autoplay playsinline id="video"></video>
+    <!-- poster="" এর ভিতরে আপনার থাম্বনেইল ইমেজের লিংক দিন -->
+    <video autoplay playsinline id="video" poster="https://i.postimg.cc/DyVK2G5B/20251123-155559.jpg"></video>
+    
     <img id="myLogo" src="tiolive.png">
     
-    <div class="live-indicator">
+    <div class="live-indicator" id="liveIndicator">
         <div class="live-dot"></div>
         LIVE
     </div>
@@ -148,6 +167,32 @@
             await player.load(streamUrl);
             video.play();
         } catch (error) {}
+
+        // --- নতুন কোড: লাইভ ইন্ডিকেটর অটো-হাইড করার লজিক ---
+        const liveIndicator = document.getElementById('liveIndicator');
+        let fadeTimeout;
+
+        function showControls() {
+            // ১. টেক্সট দেখান (fade-out ক্লাস সরিয়ে ফেলুন)
+            liveIndicator.classList.remove('fade-out');
+            
+            // ২. আগের টাইমার ক্লিয়ার করুন যাতে সাথে সাথে অদৃশ্য না হয়
+            clearTimeout(fadeTimeout);
+
+            // ৩. নতুন টাইমার সেট করুন ৩ সেকেন্ডের জন্য
+            fadeTimeout = setTimeout(() => {
+                liveIndicator.classList.add('fade-out');
+            }, 3000); // ৩০০০ মিলিসেকেন্ড = ৩ সেকেন্ড
+        }
+
+        // শুরুতে একবার টাইমার চালু করা
+        showControls();
+
+        // স্ক্রিনে টাচ বা মাউস মুভমেন্টে ফাংশন কল হবে
+        container.addEventListener('mousemove', showControls);
+        container.addEventListener('touchstart', showControls);
+        container.addEventListener('click', showControls);
+        // --- লজিক শেষ ---
     }
 
     document.addEventListener('DOMContentLoaded', initPlayer);
