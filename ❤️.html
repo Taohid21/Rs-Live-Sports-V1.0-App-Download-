@@ -1,173 +1,263 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Stream</title>
+<title>Premium Live Stream</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body {
-background: #000;
-height: 100vh;
-width: 100vw;
-overflow: hidden;
-font-family: system-ui, -apple-system, sans-serif;
-}
-.shaka-video-container {
-position: absolute;
-inset: 0;
-width: 100%;
-height: 100%;
-cursor: pointer;
-}
-video#video {
-width: 100%;
-height: 100%;
-background: #000;
-object-fit: contain;
-}
-#overlay-container {
-position: absolute;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: #000;
-z-index: 9999;
-display: none;
-justify-content: center;
-align-items: center;
-}
-#overlay-video, #overlay-image {
-width: 100%;
-height: 100%;
-object-fit: contain;
-}
-.ui-element {
-opacity: 1;
-transition: opacity 0.5s ease-in-out;
-pointer-events: auto;
-}
-.ui-element.fade-out {
-opacity: 0;
-pointer-events: none;
-}
-.live-indicator {
-position: absolute;
-bottom: 12px;
-left: 24px;
-display: flex;
-align-items: center;
-font-weight: 700;
-color: #fff;
-font-size: 16px;
-z-index: 10;
-text-shadow: 0 0 5px rgba(0,0,0,0.5);
-}
-.live-dot {
-width: 8px;
-height: 8px;
-background-color: #fff;
-border-radius: 50%;
-margin-right: 10px;
-box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-animation: live-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-@keyframes live-pulse {
-0%, 100% { opacity: 1; transform: scale(1); }
-50% { opacity: 0.3; transform: scale(0.9); }
-}
-#channelSwitcherContainer {
-position: absolute;
-top: 10px;
-left: 140px;
-z-index: 100;
-}
-#currentChannelBtn {
-background-color: rgba(28, 28, 28, 0.8);
-color: #fff;
-border: 1px solid rgba(255, 255, 255, 0.3);
-border-radius: 4px;
-padding: 6px 12px;
-font-size: 14px;
-cursor: pointer;
-transition: background-color 0.2s;
-display: flex;
-align-items: center;
-gap: 5px;
-}
-#currentChannelBtn:hover {
-background-color: rgba(45, 45, 45, 0.9);
-}
-#channelList {
-list-style: none;
-padding: 5px 0;
-margin: 5px 0 0;
-background: rgba(28, 28, 28, 0.95);
-border-radius: 4px;
-position: absolute;
-min-width: 150px;
-border: 1px solid rgba(255, 255, 255, 0.1);
-display: none;
-flex-direction: column;
-}
-#channelList.show {
-display: flex;
-}
-#channelList li {
-padding: 8px 12px;
-cursor: pointer;
-color: #eee;
-font-size: 13px;
-}
-#channelList li:hover {
-background: rgba(255, 255, 255, 0.2);
-}
-#channelList li.active {
-color: #ff0000;
-font-weight: bold;
-}
-.shaka-seek-bar-container, .shaka-range-container, .shaka-current-time { display: none !important; }
-.shaka-overflow-menu-button { opacity: 0 !important; pointer-events: none !important; }
-.shaka-bottom-controls { padding-bottom: 5px; }
-.shaka-controls-button-panel { background: transparent !important; }
-.shaka-spinner-container { display: none !important; }
-#myLogo {
-width: 120px;
-height: auto;
-position: absolute;
-left: 16px;
-top: 10px;
-z-index: 11;
-display: none;
-object-fit: contain;
-pointer-events: none;
-}
+    * { margin: 0; padding: 0; box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    html, body {
+        background: #000;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Video Container */
+    .shaka-video-container {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: #000; /* Prevents white flash */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    video#video {
+        width: 100%;
+        height: 100%;
+        background: #000;
+    }
+
+    /* --- Custom Loader (উন্নত মানের লোডার) --- */
+    #custom-loader {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 500;
+        display: none; /* JS will toggle this */
+        pointer-events: none;
+    }
+    .loader-ring {
+        width: 60px;
+        height: 60px;
+    }
+    .loader-ring:after {
+        content: " ";
+        display: block;
+        width: 48px;
+        height: 48px;
+        margin: 6px;
+        border-radius: 50%;
+        border: 5px solid #fff;
+        border-color: #fff transparent #fff transparent;
+        animation: loader-spin 1.2s linear infinite;
+        box-shadow: 0 0 15px rgba(255,255,255,0.3);
+    }
+    @keyframes loader-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* --- Logo Styles (লোগো ছোট এবং পজিশন ফিক্স) --- */
+    #myLogo {
+        width: 80px; /* লোগো ছোট করা হয়েছে */
+        max-width: 15vw; /* মোবাইলে রেসপন্সিভ */
+        height: auto;
+        position: absolute;
+        left: 15px; /* আরও বামে */
+        top: 15px;  /* আরও উপরে */
+        z-index: 11;
+        display: none;
+        object-fit: contain;
+        pointer-events: none;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        transition: opacity 0.3s ease;
+    }
+
+    /* --- Channel Switcher (ডান পাশে) --- */
+    #channelSwitcherContainer {
+        position: absolute;
+        top: 20px;
+        right: 20px; /* ডান পাশে নেওয়া হয়েছে */
+        left: auto;
+        z-index: 100;
+    }
+    
+    #currentChannelBtn {
+        background: rgba(20, 20, 20, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    #currentChannelBtn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+    
+    #channelList {
+        list-style: none;
+        padding: 5px;
+        margin: 8px 0 0;
+        background: rgba(20, 20, 20, 0.9);
+        backdrop-filter: blur(15px);
+        border-radius: 8px;
+        position: absolute;
+        right: 0; /* Align to right edge */
+        min-width: 180px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: none;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        overflow: hidden;
+        animation: slideDown 0.2s ease-out;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    #channelList.show { display: flex; }
+    
+    #channelList li {
+        padding: 10px 14px;
+        cursor: pointer;
+        color: #ccc;
+        font-size: 13px;
+        border-radius: 4px;
+        transition: background 0.2s;
+        margin-bottom: 2px;
+    }
+    #channelList li:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
+    #channelList li.active {
+        background: rgba(229, 9, 20, 0.2);
+        color: #e50914; /* Netflix Red style */
+        font-weight: 700;
+        border: 1px solid rgba(229, 9, 20, 0.3);
+    }
+
+    /* --- Live Indicator --- */
+    .live-indicator {
+        position: absolute;
+        bottom: 25px; /* Shaka controls এর উপরে */
+        left: 20px;
+        display: flex;
+        align-items: center;
+        font-weight: 700;
+        color: #fff;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        z-index: 10;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        background: rgba(0,0,0,0.4);
+        padding: 4px 10px;
+        border-radius: 4px;
+    }
+    .live-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #ff0000;
+        border-radius: 50%;
+        margin-right: 8px;
+        box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+        animation: live-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes live-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* --- Overlay (Firebase) --- */
+    #overlay-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        z-index: 9999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
+    #overlay-video, #overlay-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    /* --- UI Fade Logic --- */
+    .ui-element {
+        opacity: 1;
+        transition: opacity 0.5s ease-in-out;
+        pointer-events: auto;
+    }
+    .ui-element.fade-out {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* --- Shaka Player Overrides --- */
+    .shaka-seek-bar-container, .shaka-range-container, .shaka-current-time { display: none !important; }
+    .shaka-overflow-menu-button { opacity: 0 !important; pointer-events: none !important; }
+    .shaka-bottom-controls { padding-bottom: 10px; }
+    .shaka-controls-button-panel { background: transparent !important; }
+    .shaka-spinner-container { display: none !important; } /* Hide default spinner */
+    .shaka-fullscreen-button { margin-right: 15px !important; }
 </style>
 </head>
 <body>
 
 <div class="shaka-video-container" data-shaka-player-container>
-<video autoplay playsinline id="video" poster="https://res.cloudinary.com/dwgvvzbvn/image/upload/v1764246852/e8saiyn9cbebon6tnf5j.jpg"></video>
-<img id="myLogo" src="tiolive.png">
+    <video autoplay playsinline id="video" poster="https://res.cloudinary.com/dwgvvzbvn/image/upload/v1764246852/e8saiyn9cbebon6tnf5j.jpg"></video>
+    
+    <!-- Custom Loader -->
+    <div id="custom-loader">
+        <div class="loader-ring"></div>
+    </div>
 
-<div class="live-indicator ui-element" id="liveIndicator">
-    <div class="live-dot"></div> LIVE
-</div>
+    <!-- Logo -->
+    <img id="myLogo" src="tiolive.png" alt="Logo">
 
-<div id="channelSwitcherContainer" class="ui-element">
-    <button id="currentChannelBtn">Fancode FHD</button>
-    <ul id="channelList"></ul>
-</div>
+    <!-- UI Elements -->
+    <div class="live-indicator ui-element" id="liveIndicator">
+        <div class="live-dot"></div> LIVE
+    </div>
 
-<div id="overlay-container">
-    <img id="overlay-image" style="display:none;">
-    <video id="overlay-video" style="display:none;" playsinline></video>
-</div>
+    <div id="channelSwitcherContainer" class="ui-element">
+        <button id="currentChannelBtn">
+            <span class="material-icons-sharp" style="font-size: 16px;">tv</span>
+            <span id="btnText">Fancode FHD</span>
+            <span class="material-icons-sharp" style="font-size: 16px; margin-left: auto;">expand_more</span>
+        </button>
+        <ul id="channelList"></ul>
+    </div>
+
+    <!-- Firebase Overlay -->
+    <div id="overlay-container">
+        <img id="overlay-image" style="display:none;">
+        <video id="overlay-video" style="display:none;" playsinline></video>
+    </div>
 </div>
 
 <script type="module">
@@ -196,46 +286,47 @@ const myLogo = document.getElementById('myLogo');
 const liveIndicator = document.getElementById('liveIndicator');
 const channelSwitcher = document.getElementById('channelSwitcherContainer');
 
+// Firebase Logic
 onValue(ref(db, 'streamState'), (snapshot) => {
-const state = snapshot.val();
-if (state && state.active) {
-mainVideo.muted = true;
-myLogo.style.display = 'none';
-liveIndicator.style.display = 'none';
-channelSwitcher.style.display = 'none';
-overlayContainer.style.display = 'flex';
+    const state = snapshot.val();
+    if (state && state.active) {
+        mainVideo.muted = true;
+        myLogo.style.display = 'none'; // Hide logo on overlay
+        liveIndicator.style.display = 'none';
+        channelSwitcher.style.display = 'none';
+        overlayContainer.style.display = 'flex';
 
-if (state.type === 'image') {
-overlayVid.style.display = 'none';
-overlayVid.pause();
-overlayImg.src = state.src;
-overlayImg.style.display = 'block';
-} else if (state.type === 'video') {
-overlayImg.style.display = 'none';
-if (overlayVid.src !== state.src) {
-overlayVid.src = state.src;
-overlayVid.style.display = 'block';
-overlayVid.load();
-overlayVid.play().catch(e => {});
-} else if (overlayVid.paused) {
-overlayVid.style.display = 'block';
-overlayVid.play();
-}
-}
-} else {
-overlayContainer.style.display = 'none';
-overlayVid.pause();
-overlayVid.src = "";
-mainVideo.muted = false;
+        if (state.type === 'image') {
+            overlayVid.style.display = 'none';
+            overlayVid.pause();
+            overlayImg.src = state.src;
+            overlayImg.style.display = 'block';
+        } else if (state.type === 'video') {
+            overlayImg.style.display = 'none';
+            if (overlayVid.src !== state.src) {
+                overlayVid.src = state.src;
+                overlayVid.style.display = 'block';
+                overlayVid.load();
+                overlayVid.play().catch(e => {});
+            } else if (overlayVid.paused) {
+                overlayVid.style.display = 'block';
+                overlayVid.play();
+            }
+        }
+    } else {
+        overlayContainer.style.display = 'none';
+        overlayVid.pause();
+        overlayVid.src = "";
+        mainVideo.muted = false;
 
-if(!mainVideo.paused) myLogo.style.display = 'block';
-liveIndicator.style.display = 'flex';
-channelSwitcher.style.display = 'block';
-}
+        // Logic handled by player events for logo
+        liveIndicator.style.display = 'flex';
+        channelSwitcher.style.display = 'block';
+    }
 });
 
 overlayVid.addEventListener('ended', () => {
-update(ref(db, 'streamState'), { active: false });
+    update(ref(db, 'streamState'), { active: false });
 });
 </script>
 
@@ -258,95 +349,157 @@ drm: {}
 ];
 
 let player;
+const loader = document.getElementById('custom-loader');
+const logo = document.getElementById('myLogo');
+
+function showLoader(show) {
+    if(show) {
+        loader.style.display = 'block';
+        logo.style.display = 'none'; // বাফারিং বা লোডিং হলে লোগো গায়েব
+    } else {
+        loader.style.display = 'none';
+    }
+}
 
 async function initPlayer() {
-shaka.polyfill.installAll();
-if (!shaka.Player.isBrowserSupported()) return;
+    shaka.polyfill.installAll();
+    if (!shaka.Player.isBrowserSupported()) return;
 
-const video = document.getElementById('video');
-const container = document.querySelector('.shaka-video-container');
-player = new shaka.Player(video);
-const ui = new shaka.ui.Overlay(player, container, video);
+    const video = document.getElementById('video');
+    const container = document.querySelector('.shaka-video-container');
+    player = new shaka.Player(video);
+    const ui = new shaka.ui.Overlay(player, container, video);
 
-ui.configure({
-'controlPanelElements': ['spacer', 'captions', 'quality', 'language', 'overflow_menu'],
-'overflowMenuButtons': ['cast']
-});
+    ui.configure({
+        'controlPanelElements': ['spacer', 'captions', 'quality', 'language', 'fullscreen'],
+        'overflowMenuButtons': ['cast']
+    });
 
-player.configure({
-streaming: { lowLatencyMode: true, bufferingGoal: 20, rebufferingGoal: 2 }
-});
+    // Smooth streaming config
+    player.configure({
+        streaming: { 
+            lowLatencyMode: true, 
+            bufferingGoal: 30, 
+            rebufferingGoal: 5,
+            jumpLargeGaps: true
+        }
+    });
 
-video.addEventListener('playing', () => {
-if(document.getElementById('overlay-container').style.display !== 'flex'){
-document.getElementById('myLogo').style.display = 'block';
-}
-});
+    // --- EVENT LISTENERS FOR LOGO & LOADER ---
+    
+    // বাফারিং হলে লোডার দেখাবে, লোগো লুকাবে
+    player.addEventListener('buffering', (event) => {
+        showLoader(event.buffering); 
+        if(!event.buffering && !video.paused) {
+            logo.style.display = 'block'; // বাফারিং শেষ হলে লোগো দেখাও
+        }
+    });
 
-const switcherBtn = document.getElementById('currentChannelBtn');
-const channelListEl = document.getElementById('channelList');
+    // ভিডিও প্লে হলে লোগো দেখাবে
+    video.addEventListener('playing', () => {
+        showLoader(false);
+        if(document.getElementById('overlay-container').style.display !== 'flex'){
+            logo.style.display = 'block';
+        }
+    });
 
-channels.forEach((channel, index) => {
-const li = document.createElement('li');
-li.textContent = channel.name;
-li.dataset.index = index;
-if(index === 0) li.classList.add('active');
-channelListEl.appendChild(li);
-});
+    // পজ বা লোডিং এর সময়
+    video.addEventListener('waiting', () => showLoader(true));
+    video.addEventListener('seeking', () => showLoader(true));
 
-switcherBtn.addEventListener('click', (e) => {
-e.stopPropagation();
-channelListEl.classList.toggle('show');
-showControls();
-});
+    // --- CHANNEL SWITCHER UI ---
+    const switcherBtn = document.getElementById('currentChannelBtn');
+    const btnText = document.getElementById('btnText');
+    const channelListEl = document.getElementById('channelList');
 
-channelListEl.addEventListener('click', async (event) => {
-if (event.target.tagName === 'LI') {
-const index = parseInt(event.target.dataset.index, 10);
-const selectedChannel = channels[index];
+    // Populate List
+    channels.forEach((channel, index) => {
+        const li = document.createElement('li');
+        li.textContent = channel.name;
+        li.dataset.index = index;
+        if(index === 0) li.classList.add('active');
+        channelListEl.appendChild(li);
+    });
 
-switcherBtn.textContent = selectedChannel.name;
-channelListEl.classList.remove('show');
+    // Toggle Menu
+    switcherBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        channelListEl.classList.toggle('show');
+        showControls();
+    });
 
-document.querySelectorAll('#channelList li').forEach(li => li.classList.remove('active'));
-event.target.classList.add('active');
+    // Handle Channel Selection
+    channelListEl.addEventListener('click', async (event) => {
+        if (event.target.tagName === 'LI') {
+            const index = parseInt(event.target.dataset.index, 10);
+            const selectedChannel = channels[index];
 
-try {
-player.configure({ drm: selectedChannel.drm });
-await player.load(selectedChannel.url);
-} catch (e) {}
-}
-});
+            // UI Update
+            btnText.textContent = selectedChannel.name;
+            channelListEl.classList.remove('show');
+            document.querySelectorAll('#channelList li').forEach(li => li.classList.remove('active'));
+            event.target.classList.add('active');
 
-document.addEventListener('click', (e) => {
-if (!switcherBtn.contains(e.target) && !channelListEl.contains(e.target)) {
-channelListEl.classList.remove('show');
-}
-});
+            // --- SMOOTH SWITCHING LOGIC ---
+            // 1. Show loader
+            showLoader(true);
+            // 2. Hide logo
+            logo.style.display = 'none';
+            // 3. Black background maintained by CSS on video container
 
-try {
-player.configure({ drm: channels[0].drm });
-await player.load(channels[0].url);
-} catch (e) {}
+            try {
+                // Unload first to stop audio/video immediately
+                await player.unload();
+                
+                player.configure({ drm: selectedChannel.drm });
+                await player.load(selectedChannel.url);
+                // Note: video.play() is handled by autoplay attribute usually, but good to ensure
+                video.play().catch(()=>{});
+            } catch (e) {
+                console.error("Error switching channel", e);
+                showLoader(false);
+            }
+        }
+    });
 
-const uiElements = document.querySelectorAll('.ui-element');
-let fadeTimeout;
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!switcherBtn.contains(e.target) && !channelListEl.contains(e.target)) {
+            channelListEl.classList.remove('show');
+        }
+    });
 
-function showControls() {
-if(document.getElementById('overlay-container').style.display === 'flex') return;
+    // Initial Load
+    showLoader(true);
+    try {
+        player.configure({ drm: channels[0].drm });
+        await player.load(channels[0].url);
+    } catch (e) {
+        showLoader(false);
+    }
 
-uiElements.forEach(el => el.classList.remove('fade-out'));
-clearTimeout(fadeTimeout);
-fadeTimeout = setTimeout(() => {
-if (channelListEl.classList.contains('show')) return;
-uiElements.forEach(el => el.classList.add('fade-out'));
-}, 3000);
-}
+    // --- UI FADE CONTROLS ---
+    const uiElements = document.querySelectorAll('.ui-element');
+    let fadeTimeout;
 
-container.addEventListener('mousemove', showControls);
-container.addEventListener('touchstart', showControls);
-container.addEventListener('click', showControls);
-showControls();
+    function showControls() {
+        if(document.getElementById('overlay-container').style.display === 'flex') return;
+
+        uiElements.forEach(el => el.classList.remove('fade-out'));
+        container.style.cursor = 'auto';
+
+        clearTimeout(fadeTimeout);
+        fadeTimeout = setTimeout(() => {
+            if (channelListEl.classList.contains('show')) return; // Don't hide if menu open
+            uiElements.forEach(el => el.classList.add('fade-out'));
+            container.style.cursor = 'none';
+        }, 3000);
+    }
+
+    container.addEventListener('mousemove', showControls);
+    container.addEventListener('touchstart', showControls);
+    container.addEventListener('click', showControls);
+    showControls();
 }
 
 document.addEventListener('DOMContentLoaded', initPlayer);
