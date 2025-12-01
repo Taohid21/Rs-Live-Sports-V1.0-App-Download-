@@ -3,31 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Live Stream - Pro TV Mode</title>
-    
-    <!-- Shaka Player -->
+    <title>Live Stream</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp">
     
-    <!-- Professional Sports Fonts -->
+    <!-- Sports Fonts for Popup -->
     <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CORE RESET & INTERACTIONS --- */
+        /* --- 1. CORE & RESET (Double Tap Fixes) --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         html, body {
             background: #000;
             height: 100vh;
             width: 100vw;
             overflow: hidden;
-            font-family: 'Rajdhani', sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             /* মোবাইল টাচ হাইলাইট এবং সিলেকশন বন্ধ */
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: pan-y; /* ডাবল ট্যাপ জুম বন্ধ */
+            touch-action: pan-y;
         }
 
         .shaka-video-container {
@@ -35,32 +33,93 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            cursor: default;
-            outline: none;
+            cursor: pointer;
+            outline: none; /* নীল বর্ডার রিমুভ */
         }
-
-        /* ফোকাস বর্ডার বন্ধ */
-        .shaka-video-container:focus, video:focus { outline: none !important; border: none !important; }
-
+        
         video#video {
             width: 100%;
             height: 100%;
             background: #000;
             object-fit: contain;
         }
+        
+        /* --- 2. ORIGINAL SHAKA PLAYER STYLES (NO CHANGES) --- */
+        /* আপনার অরিজিনাল কোড অনুযায়ী হুবহু রাখা হয়েছে */
+        .shaka-seek-bar-container, .shaka-range-container, .shaka-current-time { display: none !important; }
+        .shaka-overflow-menu-button { opacity: 0 !important; pointer-events: none !important; }
+        .shaka-bottom-controls { padding-bottom: 5px; }
+        .shaka-controls-button-panel { background: transparent !important; }
+        .shaka-spinner-container { display: none !important; }
 
-        /* --- PRO TV GRAPHICS STYLE (LOWER THIRD) --- */
+        /* --- 3. UI ELEMENTS (LOGO & LIVE) --- */
+        #myLogo { 
+            width: 15%;
+            max-width: 120px;
+            min-width: 80px;
+            height: auto;
+            position: absolute; 
+            left: 16px; 
+            top: 6px; 
+            z-index: 11;
+            /* শুরুতে হাইড থাকবে, JS দিয়ে শো হবে */
+            opacity: 0; 
+            transition: opacity 1s ease;
+            object-fit: contain;
+        }
+
+        .live-indicator {
+            position: absolute;
+            bottom: 12px;
+            left: 24px;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            color: #fff;
+            font-size: 16px;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            /* শুরুতে হাইড থাকবে */
+            opacity: 0; 
+            transition: opacity 0.5s ease-in-out;
+        }
+        .live-indicator.fade-out { opacity: 0; } /* অরিজিনাল কন্ট্রোল হাইড লজিক */
+        
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #fff;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            animation: live-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes live-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.9); }
+        }
+
+        /* --- 4. OVERLAY SYSTEM (ADS) --- */
+        #overlay-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: none;
+            justify-content: center; align-items: center;
+        }
+        #overlay-video, #overlay-image { width: 100%; height: 100%; object-fit: contain; }
+
+        /* --- 5. NEW: TV GRAPHICS (UPDATED FOR LONG TEXT) --- */
         #tv-graphics-layer {
             position: absolute;
-            bottom: 60px; /* পজিশন */
+            bottom: 60px; 
             left: 0;
             width: 100%;
             z-index: 5000;
             pointer-events: none;
             display: flex;
             justify-content: center;
-            /* ভিডিওর সাথে ব্লেন্ড করার জন্য */
             mix-blend-mode: normal; 
+            font-family: 'Rajdhani', sans-serif;
         }
 
         .graphic-container {
@@ -69,8 +128,10 @@
             height: 55px;
             opacity: 0;
             transform: translateY(30px);
-            transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1); /* স্মুথ পপ-আপ */
+            transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+            /* লং টেক্সট হ্যান্ডেল করার জন্য ম্যাক্স উইথ */
+            max-width: 90%; 
         }
 
         .graphic-container.active {
@@ -78,9 +139,8 @@
             transform: translateY(0);
         }
 
-        /* বাম পাশের ক্যাটাগরি বক্স (SCORE/WICKET) */
         .graphic-tag {
-            background: #ff0048; /* ডিফল্ট কালার */
+            background: #ff0048;
             color: #fff;
             padding: 0 15px;
             display: flex;
@@ -90,147 +150,78 @@
             font-weight: 700;
             font-size: 22px;
             text-transform: uppercase;
-            clip-path: polygon(0 0, 100% 0, 90% 100%, 0% 100%); /* কোণাকুনি ডিজাইন */
+            clip-path: polygon(0 0, 100% 0, 90% 100%, 0% 100%);
             padding-right: 25px;
-            position: relative;
             z-index: 2;
+            white-space: nowrap; /* ট্যাগ যাতে ভেঙে না যায় */
         }
 
-        /* ডান পাশের টেক্সট এরিয়া */
         .graphic-body {
-            background: rgba(15, 23, 42, 0.9); /* গ্লাস ব্ল্যাক */
-            backdrop-filter: blur(8px); /* ভিডিওর ওপর ব্লার ইফেক্ট */
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(5px);
             color: #fff;
-            padding: 0 30px 0 20px;
+            padding: 0 20px 0 20px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            margin-left: -15px; /* ট্যাগের সাথে লাগানোর জন্য */
+            margin-left: -15px;
             border-bottom: 2px solid rgba(255,255,255,0.2);
             position: relative;
             overflow: hidden;
-            min-width: 200px;
+            /* টেক্সট কন্ট্রোল */
+            min-width: 150px;
+            max-width: 60vw; /* স্ক্রিনের ৬০% এর বেশি চওড়া হবে না */
         }
 
-        /* চকচকে সাইন ইফেক্ট (Shine Animation) */
         .graphic-body::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 50%;
-            height: 100%;
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
             background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
-            transform: skewX(-25deg);
-            animation: shine 3s infinite;
+            transform: skewX(-25deg); animation: shine 3s infinite;
         }
-
-        @keyframes shine {
-            0% { left: -100%; }
-            20% { left: 200%; }
-            100% { left: 200%; }
-        }
+        @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
 
         .line-1 {
-            font-size: 14px;
-            color: #fbbf24; /* গোল্ডেন কালার */
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 1px;
-            line-height: 1;
-            margin-bottom: 2px;
+            font-size: 13px; color: #fbbf24; text-transform: uppercase; font-weight: 700;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* বড় হলে ডট ডট */
         }
 
         .line-2 {
-            font-family: 'Teko', sans-serif;
-            font-size: 26px;
-            font-weight: 600;
-            line-height: 1;
-            text-transform: uppercase;
+            font-family: 'Teko', sans-serif; font-size: 24px; font-weight: 600; line-height: 1; text-transform: uppercase;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* বড় হলে ডট ডট */
         }
 
-        /* কালার ভেরিয়েশন */
-        .theme-score .graphic-tag { background: #0ea5e9; } /* নীল */
-        .theme-alert .graphic-tag { background: #ef4444; } /* লাল */
-        .theme-info  .graphic-tag { background: #eab308; color: #000; } /* হলুদ */
-
-        /* --- UI ELEMENTS (LOGO & LIVE) --- */
-        #myLogo { 
-            width: 14%;
-            max-width: 110px;
-            position: absolute; 
-            left: 20px; 
-            top: 20px; 
-            z-index: 11;
-            opacity: 0; /* শুরুতে অদৃশ্য */
-            transition: opacity 1s ease;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-        }
-
-        .live-indicator {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            align-items: center;
-            font-weight: 700;
-            color: #fff;
-            font-size: 16px;
-            z-index: 10;
-            opacity: 0; /* শুরুতে অদৃশ্য */
-            transition: opacity 1s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .live-dot {
-            width: 10px; height: 10px;
-            background-color: #ef4444;
-            border-radius: 50%;
-            margin-right: 8px;
-            box-shadow: 0 0 10px #ef4444;
-        }
-
-        /* --- ADS OVERLAY --- */
-        #overlay-container {
-            position: absolute;
-            inset: 0; background: #000; z-index: 9999;
-            display: none; justify-content: center; align-items: center;
-        }
-        #overlay-video, #overlay-image { width: 100%; height: 100%; object-fit: contain; }
-
-        /* Shaka Cleanup */
-        .shaka-overflow-menu-button, .shaka-current-time, .shaka-seek-bar-container { display: none !important; }
-        .shaka-controls-button-panel { background: transparent !important; }
-        /* স্পিনার বা লোডিং আইকন লুকানো যাতে ক্লিয়ার মনে হয় */
-        .shaka-spinner-container { opacity: 0 !important; } 
+        .theme-score .graphic-tag { background: #0ea5e9; }
+        .theme-alert .graphic-tag { background: #ef4444; }
+        .theme-info  .graphic-tag { background: #eab308; color: #000; }
 
     </style>
 </head>
 <body>
 
-<div class="shaka-video-container" id="video-wrapper">
-    <!-- Main Video -->
+<div class="shaka-video-container" data-shaka-player-container>
+    <!-- Main Live Stream -->
     <video autoplay playsinline id="video" poster="https://d34080pnh6e62j.cloudfront.net/images/channels/ChannelFeaturedAppthumb/1764058157540x302.jpg"></video>
     
     <!-- Logo -->
     <img id="myLogo" src="tiolive.png">
     
-    <!-- Live Tag -->
+    <!-- Live Indicator -->
     <div class="live-indicator" id="liveIndicator">
         <div class="live-dot"></div> LIVE
     </div>
 
-    <!-- NEW PRO TV GRAPHIC (LOWER THIRD) -->
+    <!-- NEW PRO TV GRAPHIC LAYER -->
     <div id="tv-graphics-layer">
         <div class="graphic-container" id="popup-box">
             <div class="graphic-tag" id="popup-tag">INFO</div>
             <div class="graphic-body">
                 <div class="line-1" id="line-1">WAITING</div>
-                <div class="line-2" id="line-2">CONNECTING FEED...</div>
+                <div class="line-2" id="line-2">CONNECTING...</div>
             </div>
         </div>
     </div>
 
-    <!-- Ads Overlay -->
+    <!-- Overlay Layer (Ads) -->
     <div id="overlay-container">
         <img id="overlay-image" style="display:none;">
         <video id="overlay-video" style="display:none;" playsinline></video>
@@ -238,7 +229,6 @@
 </div>
 
 <script type="module">
-    // --- FIREBASE SETUP ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
@@ -257,71 +247,60 @@
     const db = getDatabase(app);
 
     // Elements
-    const video = document.getElementById('video');
-    const overlayCont = document.getElementById('overlay-container');
-    const overlayVid = document.getElementById('overlay-video');
+    const mainVideo = document.getElementById('video');
+    const overlayContainer = document.getElementById('overlay-container');
     const overlayImg = document.getElementById('overlay-image');
+    const overlayVid = document.getElementById('overlay-video');
     
+    // Graphic Elements
     const popupBox = document.getElementById('popup-box');
     const popupTag = document.getElementById('popup-tag');
     const line1 = document.getElementById('line-1');
     const line2 = document.getElementById('line-2');
 
-    // 1. ADS LOGIC
-    onValue(ref(db, 'streamState'), (snap) => {
-        const state = snap.val();
-        if(state && state.active) {
-            video.muted = true;
-            // Hide UI
+    // --- FIREBASE AD LOGIC ---
+    onValue(ref(db, 'streamState'), (snapshot) => {
+        const state = snapshot.val();
+        if (state && state.active) {
+            mainVideo.muted = true;
             document.getElementById('myLogo').style.opacity = '0';
             document.getElementById('liveIndicator').style.opacity = '0';
             popupBox.classList.remove('active');
-            
-            overlayCont.style.display = 'flex';
-            
-            if(state.type === 'image') {
+            overlayContainer.style.display = 'flex';
+
+            if (state.type === 'image') {
                 overlayVid.style.display = 'none'; overlayVid.pause();
                 overlayImg.src = state.src; overlayImg.style.display = 'block';
-            } else {
+            } else if (state.type === 'video') {
                 overlayImg.style.display = 'none';
-                if(overlayVid.src !== state.src) {
+                if (overlayVid.src !== state.src) {
                     overlayVid.src = state.src; overlayVid.style.display = 'block';
-                    overlayVid.load(); overlayVid.play();
-                } else if(overlayVid.paused) overlayVid.play();
+                    overlayVid.load(); overlayVid.play().catch(e => console.log("Blocked", e));
+                } else if (overlayVid.paused) {
+                    overlayVid.style.display = 'block'; overlayVid.play();
+                }
             }
         } else {
-            overlayCont.style.display = 'none';
-            overlayVid.pause();
-            video.muted = false;
+            overlayContainer.style.display = 'none';
+            overlayVid.pause(); overlayVid.src = "";
+            mainVideo.muted = false;
         }
     });
 
-    overlayVid.addEventListener('ended', () => update(ref(db, 'streamState'), { active: false }));
+    overlayVid.addEventListener('ended', () => { update(ref(db, 'streamState'), { active: false }); });
 
-    // 2. TV GRAPHICS LOGIC (DESIGN UPDATED)
+    // --- FIREBASE GRAPHICS LOGIC ---
     onValue(ref(db, 'tvGraphics'), (snap) => {
         const data = snap.val();
-        // যদি অ্যাড চলে তবে গ্রাফিক্স দেখাবো না
-        if(overlayCont.style.display === 'flex') return;
+        if(overlayContainer.style.display === 'flex') return;
 
         if (data && data.show) {
-            // Update Text
             line1.innerText = data.line1;
             line2.innerText = data.line2;
-
-            // Update Theme
-            popupBox.className = 'graphic-container active'; // Reset & Activate
-            
-            if(data.type === 'score') {
-                popupBox.classList.add('theme-score');
-                popupTag.innerText = "SCORE";
-            } else if(data.type === 'alert') {
-                popupBox.classList.add('theme-alert');
-                popupTag.innerText = "WICKET"; // Or ALERT
-            } else {
-                popupBox.classList.add('theme-info');
-                popupTag.innerText = "INFO";
-            }
+            popupBox.className = 'graphic-container active';
+            if(data.type === 'score') { popupBox.classList.add('theme-score'); popupTag.innerText = "SCORE"; }
+            else if(data.type === 'alert') { popupBox.classList.add('theme-alert'); popupTag.innerText = "WICKET"; }
+            else { popupBox.classList.add('theme-info'); popupTag.innerText = "INFO"; }
         } else {
             popupBox.classList.remove('active');
         }
@@ -329,7 +308,7 @@
 </script>
 
 <script>
-    // --- PLAYER & INTERACTION LOGIC ---
+    // --- ORIGINAL SHAKA PLAYER LOGIC ---
     async function initPlayer() {
         const streamUrl = 'https://a166aivottlinear-a.akamaihd.net/OTTB/sin-nitro/live/clients/dash/enc/inpyms8ezu/out/v1/1084d5c9a97a4c5b9f9554c88f486646/cenc.mpd';
         const keyId = '065051b99bf5cf8d9a3bde5cbde6aaf9';
@@ -339,47 +318,69 @@
         if (!shaka.Player.isBrowserSupported()) return;
 
         const video = document.getElementById('video');
-        const container = document.getElementById('video-wrapper');
+        const container = document.querySelector('.shaka-video-container');
         const player = new shaka.Player(video);
-        
-        // UI কনফিগারেশন - Double Click Fullscreen Shaka UI থেকে বন্ধ করা কঠিন, তাই আমরা Event দিয়ে আটকাবো
         const ui = new shaka.ui.Overlay(player, container, video);
+
+        // --- ORIGINAL CONFIGURATION (No Changes) ---
         ui.configure({
-            'controlPanelElements': ['spacer', 'captions', 'quality', 'language'],
+            'controlPanelElements': ['spacer', 'captions', 'quality', 'language', 'overflow_menu'],
             'overflowMenuButtons': ['cast']
         });
 
         player.configure({
             drm: { clearKeys: { [keyId]: key } },
-            streaming: { lowLatencyMode: true }
+            streaming: { lowLatencyMode: true, bufferingGoal: 20, rebufferingGoal: 2 }
         });
 
-        // --- INTERACTION FIXES ---
-        
-        // 1. ডাবল ক্লিক ফুলস্ক্রিন বন্ধ করা
+        // --- NEW: LOGO SHOW/HIDE LOGIC (REALISTIC FEEL) ---
+        video.addEventListener('timeupdate', () => {
+            // ভিডিও যদি চলে এবং ০.৫ সেকেন্ড পার হয়, এবং অ্যাড না থাকে
+            if (video.currentTime > 0.5 && !video.paused && document.getElementById('overlay-container').style.display !== 'flex') {
+                document.getElementById('myLogo').style.opacity = '1';
+                
+                // Live indicator logic (handled by interaction below, but ensure base opacity is 1)
+                const liveInd = document.getElementById('liveIndicator');
+                if (!liveInd.classList.contains('fade-out')) {
+                    liveInd.style.opacity = '1';
+                }
+            }
+        });
+
+        // --- NEW: DOUBLE CLICK & TOUCH FIX ---
         container.addEventListener('dblclick', (e) => {
             e.preventDefault();
             e.stopPropagation();
         }, true);
 
-        // 2. ভিডিও আসলেই প্লে হচ্ছে কিনা চেক করে লোগো দেখানো (Realistic Feel)
-        video.addEventListener('timeupdate', () => {
-            // ভিডিও যদি চলে এবং অ্যাড না থাকে
-            if (video.currentTime > 0.5 && !video.paused && document.getElementById('overlay-container').style.display !== 'flex') {
-                document.getElementById('myLogo').style.opacity = '1';
-                document.getElementById('liveIndicator').style.opacity = '1';
-            }
-        });
-        
-        // ভিডিও পজ বা বাফারিং হলে লোগো হালকা করে দেওয়া যেতে পারে (অপশনাল)
-        video.addEventListener('waiting', () => {
-            // বাফারিং এর সময় লোগো থাকবে, সরানো দরকার নেই
-        });
-
         try {
             await player.load(streamUrl);
             video.play();
-        } catch (e) { console.error(e); }
+        } catch (error) {}
+
+        // --- ORIGINAL AUTO-HIDE CONTROLS LOGIC ---
+        const liveIndicator = document.getElementById('liveIndicator');
+        let fadeTimeout;
+
+        function showControls() {
+            if(document.getElementById('overlay-container').style.display === 'flex') return;
+            
+            // Only show if video has started playing (Logo is visible)
+            if(document.getElementById('myLogo').style.opacity === '1') {
+               liveIndicator.style.opacity = '1'; 
+            }
+            
+            liveIndicator.classList.remove('fade-out');
+            clearTimeout(fadeTimeout);
+            fadeTimeout = setTimeout(() => {
+                liveIndicator.classList.add('fade-out');
+            }, 3000);
+        }
+
+        showControls();
+        container.addEventListener('mousemove', showControls);
+        container.addEventListener('touchstart', showControls);
+        container.addEventListener('click', showControls);
     }
 
     document.addEventListener('DOMContentLoaded', initPlayer);
