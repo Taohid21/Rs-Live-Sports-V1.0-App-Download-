@@ -75,8 +75,8 @@
             height: 8px;
             background-color: #fff;
             border-radius: 50%;
-            margin-right: 10px;
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            margin-right: 10px;
             animation: live-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         @keyframes live-pulse {
@@ -204,7 +204,14 @@
 
 <script>
     async function initPlayer() {
-        const streamUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://otte.live.fly.ww.aiv-cdn.net/lhr-nitro/live/dash/enc/j8mntrh22y/out/v1/5750d1cc17f5426093f94a461a239dd2/cenc.mpd');
+        // আসল স্ট্রিম URL
+        const actualStream = 'https://otte.live.fly.ww.aiv-cdn.net/lhr-nitro/live/dash/enc/j8mntrh22y/out/v1/5750d1cc17f5426093f94a461a239dd2/cenc.mpd';
+        // আপনার ডোমেইন দিয়ে 'https://your-project-domain.com/' পরিবর্তন করুন
+        const referer = 'https://your-project-domain.com/'; 
+        
+        // v5on.site প্রক্সি ব্যবহার করে নতুন স্ট্রিম URL তৈরি করা হলো
+        const streamUrl = 'https://v5on.site/come_to_ns_bypass.php?mpd=' + encodeURIComponent(actualStream) + '&Origin=' + encodeURIComponent(referer) + '&Referer=' + encodeURIComponent(referer);
+
         const keyId = '83fd44762766d1db4e1894322785e8bc';
         const key = '2d698dd72747f6174ef57d2e87c7a4bb';
 
